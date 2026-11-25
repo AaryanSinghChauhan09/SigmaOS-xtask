@@ -203,11 +203,11 @@ fn push_newc_ino(buf: &mut Vec<u8>, name: &str, data: &[u8], mode: u32, ino: usi
     buf.extend_from_slice(&hdr);
     buf.extend_from_slice(name.as_bytes());
     buf.push(0);
-    while buf.len() % 4 != 0 {
+    while !buf.len().is_multiple_of(4) {
         buf.push(0);
     }
     buf.extend_from_slice(data);
-    while buf.len() % 4 != 0 {
+    while !buf.len().is_multiple_of(4) {
         buf.push(0);
     }
 }
@@ -215,7 +215,7 @@ fn push_newc_ino(buf: &mut Vec<u8>, name: &str, data: &[u8], mode: u32, ino: usi
 fn push_newc_trailer(buf: &mut Vec<u8>) {
     push_newc_ino(buf, "TRAILER!!!", &[], 0, 0);
     // pad archive to 512
-    while buf.len() % 512 != 0 {
+    while !buf.len().is_multiple_of(512) {
         buf.push(0);
     }
 }
@@ -368,10 +368,10 @@ fn main() {
 
 fn dispatch(cli: Cli, r: &Path) -> Result<(), String> {
     match cli.cmd {
-        Cmd::BuildKernel => cmd_build_kernel(&r),
-        Cmd::BuildUserspace => cmd_build_userspace(&r),
-        Cmd::Initramfs { out } => cmd_initramfs(&r, &out),
-        Cmd::KernelElf { out } => cmd_kernel_elf(&r, &out),
+        Cmd::BuildKernel => cmd_build_kernel(r),
+        Cmd::BuildUserspace => cmd_build_userspace(r),
+        Cmd::Initramfs { out } => cmd_initramfs(r, &out),
+        Cmd::KernelElf { out } => cmd_kernel_elf(r, &out),
         Cmd::Qemu { kernel, initramfs, mem, timeout } => {
             cmd_qemu(&kernel, &initramfs, mem, timeout)
         }
@@ -405,7 +405,7 @@ fn dispatch(cli: Cli, r: &Path) -> Result<(), String> {
                 .into(),
         ),
         Cmd::Status => {
-            cmd_status(&r);
+            cmd_status(r);
             Ok(())
         }
     }
