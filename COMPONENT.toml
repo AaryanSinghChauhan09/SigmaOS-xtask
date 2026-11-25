@@ -1,0 +1,11 @@
+[component]
+name = "sigmaos-xtask"
+version = "0.1.0"
+description = "Build runner and QEMU orchestrator for SigmaOS kernel and userspace"
+license = "GPL-3.0-or-later"
+
+[dependencies]
+sigmaos-sigma-kernel = "0.1"
+sigmaos-sigma-bootloader = "0.1"
+sigmaos-initramfs = "0.1"
+sigmaos-ISO = "0.1"
