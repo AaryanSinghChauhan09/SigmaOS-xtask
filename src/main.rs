@@ -127,6 +127,7 @@ fn cmd_build_userspace(root: &Path) -> Result<(), String> {
     let mut c = Proc::new("cargo");
     c.arg("build").arg("--release")
         .arg("--bin").arg("sigma-init")
+        .arg("--bin").arg("sigma-child")
         .arg("--target").arg("x86_64-unknown-none")
         .current_dir(&sh);
     run(&mut c, "cargo build sigma-init")
@@ -142,6 +143,7 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
     for (name, rel) in [
         ("bin/sigma-sh", "sigma-sh/target/release/sigma-sh"),
         ("init", "sigma-sh/target/x86_64-unknown-none/release/sigma-init"),
+        ("child", "sigma-sh/target/x86_64-unknown-none/release/sigma-child"),
     ] {
         let p = repo(root, rel.split('/').next().unwrap()).join(
             rel.split_once('/').map(|(_, r)| r).unwrap_or(rel),
