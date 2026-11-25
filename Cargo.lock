@@ -390,10 +390,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sigmaos-sigma-bootloader"
-version = "0.1.0"
-
-[[package]]
 name = "sigmaos-xtask"
 version = "0.1.0"
 dependencies = [
@@ -403,7 +399,6 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "sigmaos-sigma-bootloader",
  "thiserror",
  "toml",
 ]

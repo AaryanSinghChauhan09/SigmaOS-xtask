@@ -10,7 +10,6 @@ name = "xtask"
 path = "src/main.rs"
 
 [dependencies]
-sigmaos-sigma-bootloader = { path = "../SigmaOS-sigma-bootloader" }
 clap = { version = "4", features = ["derive"] }
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }

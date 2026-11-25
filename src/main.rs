@@ -154,14 +154,18 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
 }
 
 fn hex8_usize(v: usize) -> [u8; 8] {
+    // cpio newc fields are 8 ASCII hex digits, not binary.
+    let s = format!("{:08x}", v);
     let mut b = [0u8; 8];
-    for (i, byte) in b.iter_mut().enumerate() {
-        *byte = ((v >> (i * 8)) & 0xff) as u8;
-    }
+    b.copy_from_slice(s.as_bytes());
     b
 }
 
 fn push_newc(buf: &mut Vec<u8>, name: &str, data: &[u8], mode: u32) {
+    push_newc_ino(buf, name, data, mode, 1);
+}
+
+fn push_newc_ino(buf: &mut Vec<u8>, name: &str, data: &[u8], mode: u32, ino: usize) {
     // newc header: magic(6) ino(8) mode(8) uid(8) gid(8) nlink(8)
     // mtime(8) filesize(8) devmaj(8) devmin(8) rdevmaj(8) rdevmin(8)
     // namesize(8) check(8) = 110 bytes, then name NUL, pad to 4
@@ -169,7 +173,7 @@ fn push_newc(buf: &mut Vec<u8>, name: &str, data: &[u8], mode: u32) {
     let mut hdr = Vec::with_capacity(110);
     hdr.extend_from_slice(b"070701");
     let fields: [usize; 13] = [
-        1, // ino
+        ino,
         mode as usize,
         0, 0, 1, // uid gid nlink
         0,                 // mtime
@@ -195,7 +199,7 @@ fn push_newc(buf: &mut Vec<u8>, name: &str, data: &[u8], mode: u32) {
 }
 
 fn push_newc_trailer(buf: &mut Vec<u8>) {
-    push_newc(buf, "TRAILER!!!", &[], 0);
+    push_newc_ino(buf, "TRAILER!!!", &[], 0, 0);
     // pad archive to 512
     while buf.len() % 512 != 0 {
         buf.push(0);
@@ -203,26 +207,27 @@ fn push_newc_trailer(buf: &mut Vec<u8>) {
 }
 
 fn cmd_kernel_elf(root: &Path, out: &Path) -> Result<(), String> {
-    println!("== linking kernel ELF ==");
+    println!("== building sigma-kernel ELF (x86_64-unknown-none) ==");
     let kdir = repo(root, "sigma-kernel");
-    // build first so the object exists
-    cmd_build_kernel(root)?;
-    let obj = kdir.join("target/x86_64-unknown-none/release/libsigmaos_sigma_kernel.rlib");
-    if !obj.exists() {
-        return Err(format!("kernel rlib not found at {}", obj.display()));
+    let mut c = Proc::new("cargo");
+    c.arg("build")
+        .arg("--release")
+        .arg("--target")
+        .arg("x86_64-unknown-none")
+        .arg("--bin")
+        .arg("sigma-kernel")
+        .current_dir(&kdir);
+    run(&mut c, "cargo build kernel")?;
+
+    let elf = kdir.join("target/x86_64-unknown-none/release/sigma-kernel");
+    if !elf.exists() {
+        return Err(format!("kernel ELF not found at {}", elf.display()));
     }
-    // A real link step needs a linker script + bootloader header object;
-    // emit the bootloader header bytes alongside for the linker script.
     if let Some(p) = out.parent() {
         std::fs::create_dir_all(p).map_err(|e| e.to_string())?;
     }
-    let hdr_path = out.with_extension("mb2hdr");
-    let hdr = sigma_bootloader::Mb2Header::sigmaos_default(0x100000, &[])
-        .map_err(|e| format!("{:?}", e))?;
-    std::fs::write(&hdr_path, hdr.to_bytes()).map_err(|e| e.to_string())?;
-    println!("   wrote bootloader header -> {}", hdr_path.display());
-    println!("   kernel object -> {}", obj.display());
-    println!("   (full ELF link requires linker.ld — see kernel-elf stage docs)");
+    std::fs::copy(&elf, out).map_err(|e| format!("copy ELF: {}", e))?;
+    println!("   kernel ELF -> {}", out.display());
     Ok(())
 }
 
