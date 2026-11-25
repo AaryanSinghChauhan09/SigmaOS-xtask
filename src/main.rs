@@ -126,6 +126,7 @@ fn cmd_build_userspace(root: &Path) -> Result<(), String> {
     let sh = repo(root, "sigma-sh");
     let mut c = Proc::new("cargo");
     c.arg("build").arg("--release")
+        .arg("--features").arg("sigmaos-target")
         .arg("--bin").arg("sigma-init")
         .arg("--bin").arg("sigma-child")
         .arg("--target").arg("x86_64-unknown-none")
@@ -141,7 +142,6 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
     let mut entries: Vec<(String, PathBuf)> = Vec::new();
     // stage known userspace binaries
     for (name, rel) in [
-        ("bin/sigma-sh", "sigma-sh/target/release/sigma-sh"),
         ("init", "sigma-sh/target/x86_64-unknown-none/release/sigma-init"),
         ("child", "sigma-sh/target/x86_64-unknown-none/release/sigma-child"),
     ] {
