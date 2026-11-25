@@ -247,6 +247,8 @@ fn qemu_args(kernel: &Path, initramfs: &Path, mem: u32) -> Vec<String> {
     vec![
         "-machine".into(),
         "q35".into(),
+        "-cpu".into(),
+        "max".into(),
         "-m".into(),
         format!("{}M", mem),
         "-kernel".into(),
