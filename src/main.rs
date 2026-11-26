@@ -136,6 +136,8 @@ fn cmd_build_userspace(root: &Path) -> Result<(), String> {
         .arg("sigma-init")
         .arg("--bin")
         .arg("sigma-child")
+        .arg("--bin")
+        .arg("sh")
         .arg("--target")
         .arg("x86_64-unknown-none")
         .current_dir(&sh);
@@ -157,6 +159,10 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
         (
             "child",
             "sigma-sh/target/x86_64-unknown-none/release/sigma-child",
+        ),
+        (
+            "sh",
+            "sigma-sh/target/x86_64-unknown-none/release/sh",
         ),
     ] {
         let p = repo(root, rel.split('/').next().unwrap())
