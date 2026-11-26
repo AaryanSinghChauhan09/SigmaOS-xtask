@@ -160,10 +160,7 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
             "child",
             "sigma-sh/target/x86_64-unknown-none/release/sigma-child",
         ),
-        (
-            "sh",
-            "sigma-sh/target/x86_64-unknown-none/release/sh",
-        ),
+        ("sh", "sigma-sh/target/x86_64-unknown-none/release/sh"),
     ] {
         let p = repo(root, rel.split('/').next().unwrap())
             .join(rel.split_once('/').map(|(_, r)| r).unwrap_or(rel));
