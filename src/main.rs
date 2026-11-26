@@ -119,17 +119,25 @@ fn cmd_build_userspace(root: &Path) -> Result<(), String> {
     println!("== building sigma-sh ==");
     let sh = repo(root, "sigma-sh");
     let mut c0 = Proc::new("cargo");
-    c0.arg("build").arg("--release").arg("--bin").arg("sigma-sh")
+    c0.arg("build")
+        .arg("--release")
+        .arg("--bin")
+        .arg("sigma-sh")
         .current_dir(&sh);
     run(&mut c0, "cargo build sigma-sh")?;
     println!("== building sigma-init (x86_64-unknown-none) ==");
     let sh = repo(root, "sigma-sh");
     let mut c = Proc::new("cargo");
-    c.arg("build").arg("--release")
-        .arg("--features").arg("sigmaos-target")
-        .arg("--bin").arg("sigma-init")
-        .arg("--bin").arg("sigma-child")
-        .arg("--target").arg("x86_64-unknown-none")
+    c.arg("build")
+        .arg("--release")
+        .arg("--features")
+        .arg("sigmaos-target")
+        .arg("--bin")
+        .arg("sigma-init")
+        .arg("--bin")
+        .arg("sigma-child")
+        .arg("--target")
+        .arg("x86_64-unknown-none")
         .current_dir(&sh);
     run(&mut c, "cargo build sigma-init")
 }
@@ -142,12 +150,17 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
     let mut entries: Vec<(String, PathBuf)> = Vec::new();
     // stage known userspace binaries
     for (name, rel) in [
-        ("init", "sigma-sh/target/x86_64-unknown-none/release/sigma-init"),
-        ("child", "sigma-sh/target/x86_64-unknown-none/release/sigma-child"),
+        (
+            "init",
+            "sigma-sh/target/x86_64-unknown-none/release/sigma-init",
+        ),
+        (
+            "child",
+            "sigma-sh/target/x86_64-unknown-none/release/sigma-child",
+        ),
     ] {
-        let p = repo(root, rel.split('/').next().unwrap()).join(
-            rel.split_once('/').map(|(_, r)| r).unwrap_or(rel),
-        );
+        let p = repo(root, rel.split('/').next().unwrap())
+            .join(rel.split_once('/').map(|(_, r)| r).unwrap_or(rel));
         if p.exists() {
             entries.push((name.to_string(), p));
         }
@@ -189,12 +202,17 @@ fn push_newc_ino(buf: &mut Vec<u8>, name: &str, data: &[u8], mode: u32, ino: usi
     let fields: [usize; 13] = [
         ino,
         mode as usize,
-        0, 0, 1, // uid gid nlink
-        0,                 // mtime
-        data.len(),        // filesize
-        0, 0, 0, 0,        // dev/rdev
-        namesize,          // namesize
-        0,                 // check
+        0,
+        0,
+        1,          // uid gid nlink
+        0,          // mtime
+        data.len(), // filesize
+        0,
+        0,
+        0,
+        0,        // dev/rdev
+        namesize, // namesize
+        0,        // check
     ];
     for f in fields {
         hdr.extend_from_slice(&hex8_usize(f));
@@ -280,7 +298,10 @@ fn check_qemu() -> Result<(), String> {
 fn cmd_qemu(kernel: &Path, initramfs: &Path, mem: u32, timeout: u32) -> Result<(), String> {
     check_qemu()?;
     if !kernel.exists() {
-        return Err(format!("kernel not found: {} — run `xtask kernel-elf`", kernel.display()));
+        return Err(format!(
+            "kernel not found: {} — run `xtask kernel-elf`",
+            kernel.display()
+        ));
     }
     if !initramfs.exists() {
         return Err(format!(
@@ -299,12 +320,12 @@ fn cmd_qemu(kernel: &Path, initramfs: &Path, mem: u32, timeout: u32) -> Result<(
     if timeout > 0 {
         // wrap in `timeout` so the VM exits cleanly
         let mut t = Proc::new("timeout");
-        t.arg(format!("{}s", timeout)).arg("qemu-system-x86_64").args(&args);
+        t.arg(format!("{}s", timeout))
+            .arg("qemu-system-x86_64")
+            .args(&args);
         run(&mut t, "qemu")
     } else {
-        let st = c
-            .status()
-            .map_err(|e| format!("qemu spawn: {}", e))?;
+        let st = c.status().map_err(|e| format!("qemu spawn: {}", e))?;
         if !st.success() {
             return Err(format!("qemu exited {}", st));
         }
@@ -336,7 +357,8 @@ fn cmd_status(root: &Path) {
         }),
         ("ovmf dirs", {
             let mut c = Proc::new("sh");
-            c.arg("-c").arg("ls /usr/share/OVMF /usr/share/edk2 /usr/share/qemu 2>/dev/null | head -1");
+            c.arg("-c")
+                .arg("ls /usr/share/OVMF /usr/share/edk2 /usr/share/qemu 2>/dev/null | head -1");
             c
         }),
     ];
@@ -351,7 +373,11 @@ fn cmd_status(root: &Path) {
         ("sigma-bootloader", repo(root, "sigma-bootloader")),
         ("initramfs", repo(root, "initramfs")),
     ] {
-        println!("{:<38} {}", format!("repo SigmaOS-{}", name), if dir.is_dir() { "present" } else { "MISSING" });
+        println!(
+            "{:<38} {}",
+            format!("repo SigmaOS-{}", name),
+            if dir.is_dir() { "present" } else { "MISSING" }
+        );
     }
 }
 
@@ -372,9 +398,12 @@ fn dispatch(cli: Cli, r: &Path) -> Result<(), String> {
         Cmd::BuildUserspace => cmd_build_userspace(r),
         Cmd::Initramfs { out } => cmd_initramfs(r, &out),
         Cmd::KernelElf { out } => cmd_kernel_elf(r, &out),
-        Cmd::Qemu { kernel, initramfs, mem, timeout } => {
-            cmd_qemu(&kernel, &initramfs, mem, timeout)
-        }
+        Cmd::Qemu {
+            kernel,
+            initramfs,
+            mem,
+            timeout,
+        } => cmd_qemu(&kernel, &initramfs, mem, timeout),
         Cmd::QemuDebug { kernel } => {
             check_qemu()?;
             let args = vec![
@@ -401,8 +430,7 @@ fn dispatch(cli: Cli, r: &Path) -> Result<(), String> {
             Ok(())
         }
         Cmd::TestQemu => Err(
-            "test-qemu: requires a linked kernel ELF; run kernel-elf then qemu --timeout 10"
-                .into(),
+            "test-qemu: requires a linked kernel ELF; run kernel-elf then qemu --timeout 10".into(),
         ),
         Cmd::Status => {
             cmd_status(r);
