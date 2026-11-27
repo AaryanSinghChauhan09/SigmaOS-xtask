@@ -177,6 +177,14 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
         let data = std::fs::read(src).map_err(|e| format!("read {}: {}", src.display(), e))?;
         push_newc(&mut buf, arcname, &data, 0o755);
     }
+    // Distro-parity metadata files (parents auto-created by the VFS).
+    push_newc(&mut buf, "etc/hostname", b"sigmaos\n", 0o644);
+    push_newc(
+        &mut buf,
+        "etc/os-release",
+        b"NAME=\"SigmaOS\"\nID=sigmaos\nID_LIKE=arch\nPRETTY_NAME=\"SigmaOS\"\nVERSION_ID=0.1\n",
+        0o644,
+    );
     push_newc_trailer(&mut buf);
     std::fs::write(out, &buf).map_err(|e| e.to_string())?;
     println!("   {} files, {} bytes", entries.len(), buf.len());
