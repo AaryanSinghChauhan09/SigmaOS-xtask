@@ -173,21 +173,33 @@ fn cmd_initramfs(root: &Path, out: &Path) -> Result<(), String> {
     }
     // cpio newc writer
     let mut buf = Vec::new();
+    let mut n_members = 0usize;
     for (arcname, src) in &entries {
         let data = std::fs::read(src).map_err(|e| format!("read {}: {}", src.display(), e))?;
         push_newc(&mut buf, arcname, &data, 0o755);
+        n_members += 1;
+        // FHS parity: also expose each binary under /bin/ so PATH
+        // lookups (/bin first) and `which` work. Root entries stay —
+        // sigma-init hardcodes /init, /child, /sh.
+        if arcname != "init" {
+            let bin_name = format!("bin/{}", arcname);
+            push_newc(&mut buf, &bin_name, &data, 0o755);
+            n_members += 1;
+        }
     }
     // Distro-parity metadata files (parents auto-created by the VFS).
     push_newc(&mut buf, "etc/hostname", b"sigmaos\n", 0o644);
+    n_members += 1;
     push_newc(
         &mut buf,
         "etc/os-release",
         b"NAME=\"SigmaOS\"\nID=sigmaos\nID_LIKE=arch\nPRETTY_NAME=\"SigmaOS\"\nVERSION_ID=0.1\n",
         0o644,
     );
+    n_members += 1;
     push_newc_trailer(&mut buf);
     std::fs::write(out, &buf).map_err(|e| e.to_string())?;
-    println!("   {} files, {} bytes", entries.len(), buf.len());
+    println!("   {} archive members, {} bytes", n_members, buf.len());
     Ok(())
 }
 
